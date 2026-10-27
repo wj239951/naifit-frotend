@@ -663,6 +663,14 @@ main {
   backdrop-filter: blur(4px);
 }
 
+.score-help {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
 .result-body {
   display: flex;
   flex-direction: column;

@@ -66,6 +66,7 @@ function download(): void {
       <p v-if="result" class="result-meta">
         候选 {{ result.meta.candidates_considered }} 款 · 排除 {{ result.meta.excluded }} 款 ·
         {{ result.meta.engine }} · 理由{{ result.meta.explainer?.mode === 'llm' ? '由模型生成' : '模板生成' }}
+        <span class="score-help">匹配度＝命中规则权重 ÷ 本次生效规则总权重</span>
       </p>
     </div>
 
@@ -87,8 +88,8 @@ function download(): void {
           <span class="tier-badge" :class="`tier-${rec.tier}`">
             {{ TIER_LABELS[rec.tier] ?? rec.tier }}
           </span>
-          <span class="score-badge" :title="'规则匹配得分'">
-            {{ rec.match_score.toFixed(2) }}
+          <span class="score-badge" :title="'匹配度：命中的规则权重 ÷ 本次生效规则总权重，越高越贴合所选特征'">
+            {{ Math.round(rec.match_score * 100) }}%
           </span>
         </div>
 
