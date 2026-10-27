@@ -44,6 +44,16 @@ export interface Features {
   ita_degrees?: number | null
 }
 
+export interface ReferenceImage {
+  image: string
+  title?: string | null
+  author?: string | null
+  license: string
+  license_label?: string | null
+  source_url?: string | null
+  provider?: string
+}
+
 export interface Recommendation {
   style_id: string
   name: string
@@ -59,6 +69,7 @@ export interface Recommendation {
   reason: string
   caution: string | null
   media: StyleMedia | null
+  references?: ReferenceImage[]
 }
 
 export interface ExplainerMeta {

@@ -57,6 +57,7 @@ VITE_API_BASE=https://api.example.com
 - **款式库切换**：可选样例库（15 款精绘占位示意图）或演示库（43 款真实截图），切换后图廊与推荐结果同步更新；启动时调 `GET /api/libraries`，优先自动选图齐全的演示库，缺图时禁用该库并提示重跑 `prepare_images.py`
 - **图片授权标注**：演示库卡片标「演示素材」，样例库标「示意占位图 · 非真实款式」，来源页可点击；无 `DEEPSEEK_API_KEY` 时大模型开关自动置灰
 - **甲长语义与筛选**：甲长标签为「适合短甲 / 适合中长甲 / 适合长甲」，表示该款式的设计适配甲长（不是图片模特的指甲长度）；甲长较长时可做所有长度款式，想只看长甲款可在款式库按甲长筛选。演示库甲长为自动打标的启发式估算，正式库需人工复核。
+- **网络参考图（M32）**：推荐卡下方可展示同风格的 CC 授权网图（缩略图 + `license · author`，点击跳原作者页面）。数据来自后端 `references` 字段（预取清单 `data/references.json`）；没有预取数据时不渲染该区块，主图仍是款式库真实条目。
 - 后端健康状态实时指示（顶部右上角），断连时给出明确提示
 
 ## 截图
@@ -102,7 +103,7 @@ naifit-fonted/
 | GET | `/api/health` | 健康检查（含 `llm_configured`，决定大模型开关是否可用） |
 | GET | `/api/libraries` | 可选款式库 + 图片齐全度（默认库自动选择依据） |
 | GET | `/api/styles?library=sample\|demo` | 款式库（`{ count, styles }`，默认 sample） |
-| POST | `/api/recommend` | 推荐（`features` + `free_text` + `use_llm` + `library`） |
+| POST | `/api/recommend` | 推荐（`features` + `free_text` + `use_llm` + `library`；响应卡片含 `references` 网络参考图） |
 | POST | `/api/vision/upload` | 手照识别（原始图片字节，`?scene=commute`） |
 
 图片字段（`image`、`media.image`）是相对路径，如 `static/styles/s001.jpg`，通过 `assetUrl()` 拼成同源 URL。

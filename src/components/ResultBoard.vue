@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RecommendResponse, Recommendation, StyleMedia } from '../types'
+import type { RecommendResponse, Recommendation, ReferenceImage, StyleMedia } from '../types'
 import { assetUrl, downloadJson } from '../api'
 import {
   COLOR_FAMILY_LABELS,
@@ -37,6 +37,15 @@ function captionOf(rec: Recommendation): string {
   if (media.provider === 'openverse' && media.creator) parts.push(`作者 ${media.creator}`)
   if (media.source_url) parts.push('查看来源')
   return parts.join(' · ')
+}
+
+function refLink(ref: ReferenceImage): string {
+  return ref.source_url || assetUrl(ref.image)
+}
+
+function refCaption(ref: ReferenceImage): string {
+  const license = ref.license_label ?? LICENSE_LABELS[ref.license] ?? ref.license
+  return [license, ref.author].filter(Boolean).join(' · ')
 }
 
 function copyJson(): void {
@@ -129,6 +138,27 @@ function download(): void {
               来源链接
             </a>
           </div>
+
+          <div v-if="rec.references?.length" class="refs">
+            <div class="refs-head">
+              <span>网络参考图</span>
+              <span class="refs-hint">CC 授权 · 点击查看原图</span>
+            </div>
+            <div class="refs-row">
+              <a
+                v-for="(ref, refIndex) in rec.references.slice(0, 3)"
+                :key="`${ref.image}-${refIndex}`"
+                class="ref-link"
+                :href="refLink(ref)"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="ref.title || '查看原图与授权信息'"
+              >
+                <img :src="assetUrl(ref.image)" :alt="ref.title || `${rec.name} 网络参考图`" loading="lazy" />
+                <span class="ref-meta">{{ refCaption(ref) }}</span>
+              </a>
+            </div>
+          </div>
         </div>
       </article>
     </div>
@@ -177,6 +207,60 @@ function download(): void {
 
 .media-note a {
   color: var(--brand);
+}
+
+.refs {
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.refs-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft, #6b5a52);
+  margin-bottom: 6px;
+}
+
+.refs-hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.refs-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ref-link {
+  flex: 1 1 0;
+  min-width: 0;
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-2, #f7f1ec);
+  border: 1px solid var(--line);
+}
+
+.ref-link img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.ref-meta {
+  display: block;
+  padding: 4px 6px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .avoid-block {
