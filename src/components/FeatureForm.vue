@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Features, LibraryName } from '../types'
+import type { Features, LibraryInfo, LibraryName } from '../types'
 import { DEFAULT_FEATURES, FIELDS, LIBRARIES, LIBRARY_HINTS, PRESETS, type Preset } from '../options'
 
 const props = defineProps<{
   busy: boolean
   llmReady: boolean
+  libraryMeta?: Record<string, LibraryInfo>
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +41,17 @@ function pickLibrary(value: string): void {
     library.value = value
   }
 }
+
+function libraryReady(name: string): boolean {
+  const meta = props.libraryMeta?.[name]
+  if (!meta) return true
+  return meta.available && meta.images_ready
+}
+
+const libraryHint = computed(() => {
+  const base = LIBRARY_HINTS[library.value] ?? ''
+  return libraryReady(library.value) ? base : `${base} · 图片缺失，请重跑 prepare_images.py`
+})
 </script>
 
 <template>
@@ -76,14 +88,15 @@ function pickLibrary(value: string): void {
           type="button"
           class="chip"
           :class="{ active: library === opt.value }"
-          :disabled="busy"
+          :disabled="busy || !libraryReady(opt.value)"
           :aria-pressed="library === opt.value"
+          :title="libraryReady(opt.value) ? LIBRARY_HINTS[opt.value] : '图片缺失，请在项目根目录重跑 prepare_images.py'"
           @click="pickLibrary(opt.value)"
         >
           {{ opt.label }}
         </button>
       </div>
-      <p class="field-note">{{ LIBRARY_HINTS[library] }}</p>
+      <p class="field-note">{{ libraryHint }}</p>
     </div>
 
     <div v-for="field in FIELDS" :key="String(field.key)" class="field">

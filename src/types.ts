@@ -130,4 +130,18 @@ export interface StylesResponse {
 export interface HealthResponse {
   status: string
   service?: string
+  llm_configured?: boolean
+}
+
+export interface LibraryInfo {
+  name: LibraryName
+  count: number
+  available: boolean
+  images_ready: boolean
+  missing_images?: number
+}
+
+export interface LibrariesResponse {
+  default: LibraryName
+  libraries: LibraryInfo[]
 }

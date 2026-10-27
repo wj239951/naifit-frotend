@@ -1,4 +1,4 @@
-import type { Features } from './types'
+import type { Features, LibrariesResponse, LibraryName } from './types'
 
 export interface Option {
   value: string
@@ -99,18 +99,28 @@ export const SCENE_LABELS: Record<string, string> = {
 }
 
 export const LIBRARIES: Option[] = [
-  { value: 'sample', label: '样例库 · 15 款' },
-  { value: 'demo', label: '演示库 · 43 款' },
+  { value: 'sample', label: '样例库 · 15 款（示意图）' },
+  { value: 'demo', label: '演示库 · 43 款（真实截图）' },
 ]
 
 export const LIBRARY_HINTS: Record<string, string> = {
-  sample: '占位图样式示例，随仓库提交，离线也能看',
-  demo: '公开平台截图素材，仅演示用，版权归原作者',
+  sample: '精绘占位示意图，非真实款式；随仓库提交，离线也能看',
+  demo: '公开平台真实截图，仅演示用，版权归原作者',
 }
 
 export const LIBRARY_SHORT: Record<string, string> = {
   sample: '样例库',
   demo: '演示库',
+}
+
+/** 有图齐全的演示库优先（真实截图更好看）；否则退回样例库。 */
+export function pickDefaultLibrary(res: LibrariesResponse | null): LibraryName | null {
+  if (!res) return null
+  const ready = res.libraries.filter((item) => item.available && item.images_ready)
+  const demo = ready.find((item) => item.name === 'demo')
+  if (demo) return 'demo'
+  const sample = ready.find((item) => item.name === 'sample')
+  return sample ? 'sample' : null
 }
 
 export const TIER_LABELS: Record<string, string> = {
@@ -172,7 +182,7 @@ export const LICENSE_LABELS: Record<string, string> = {
   unsplash: 'Unsplash 可商用',
   openverse: 'CC 开放许可',
   unknown: '授权待确认',
-  placeholder: '占位图',
+  placeholder: '示意占位图',
 }
 
 // 常用规则 id → 中文（没命中的走 humanize 兜底）

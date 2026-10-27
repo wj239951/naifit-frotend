@@ -54,7 +54,8 @@ VITE_API_BASE=https://api.example.com
   - 完整 JSON 展开 / 复制 / 下载，方便复现与调试
 - **手照识别**：拖拽或点击上传手照（≤12 MB），调用 `POST /api/vision/upload`，展示识别质量、手别、手势与各字段置信度；可一键回填表单（低置信字段会标注）
 - **款式库**：全部款式网格，按色系 / 款式筛选 + 关键词搜索，显示授权与来源说明
-- **款式库切换**：可选样例库（15 款占位图）或演示库（43 款真实截图），切换后图廊与推荐结果同步更新
+- **款式库切换**：可选样例库（15 款精绘占位示意图）或演示库（43 款真实截图），切换后图廊与推荐结果同步更新；启动时调 `GET /api/libraries`，优先自动选图齐全的演示库，缺图时禁用该库并提示重跑 `prepare_images.py`
+- **图片授权标注**：演示库卡片标「演示素材」，样例库标「示意占位图 · 非真实款式」，来源页可点击；无 `DEEPSEEK_API_KEY` 时大模型开关自动置灰
 - 后端健康状态实时指示（顶部右上角），断连时给出明确提示
 
 ## 截图
@@ -97,7 +98,8 @@ naifit-fonted/
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| GET | `/api/health` | 健康检查 |
+| GET | `/api/health` | 健康检查（含 `llm_configured`，决定大模型开关是否可用） |
+| GET | `/api/libraries` | 可选款式库 + 图片齐全度（默认库自动选择依据） |
 | GET | `/api/styles?library=sample\|demo` | 款式库（`{ count, styles }`，默认 sample） |
 | POST | `/api/recommend` | 推荐（`features` + `free_text` + `use_llm` + `library`） |
 | POST | `/api/vision/upload` | 手照识别（原始图片字节，`?scene=commute`） |

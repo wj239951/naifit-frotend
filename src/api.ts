@@ -1,5 +1,6 @@
 import type {
   HealthResponse,
+  LibrariesResponse,
   LibraryName,
   RecommendPayload,
   RecommendResponse,
@@ -58,6 +59,7 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 30000): 
 
 export const api = {
   health: () => request<HealthResponse>('/api/health', {}, 6000),
+  libraries: () => request<LibrariesResponse>('/api/libraries', {}, 8000),
   styles: (library: LibraryName = 'sample') =>
     request<StylesResponse>(`/api/styles?library=${encodeURIComponent(library)}`, {}, 15000),
   recommend: (payload: RecommendPayload) =>

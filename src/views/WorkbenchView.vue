@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import type { Features, LibraryName, RecommendResponse, Style, VisionResponse } from '../types'
+import type {
+  Features,
+  LibraryInfo,
+  LibraryName,
+  RecommendResponse,
+  Style,
+  VisionResponse,
+} from '../types'
 import { api, ApiError } from '../api'
-import { DEFAULT_FEATURES, LIBRARY_SHORT, SCENE_LABELS, type Preset } from '../options'
+import { DEFAULT_FEATURES, LIBRARY_SHORT, SCENE_LABELS, pickDefaultLibrary, type Preset } from '../options'
 import FeatureForm from '../components/FeatureForm.vue'
 import PhotoUpload from '../components/PhotoUpload.vue'
 import ResultBoard from '../components/ResultBoard.vue'
@@ -20,6 +27,11 @@ const styles = ref<Style[]>([])
 const stylesError = ref('')
 const llmReady = ref(false)
 const showUpload = ref(false)
+const libraryMeta = ref<Record<string, LibraryInfo>>({})
+const demoMissing = computed(() => {
+  const demo = libraryMeta.value.demo
+  return Boolean(demo && demo.available && !demo.images_ready)
+})
 
 const libraryCount = computed(() => styles.value.length)
 const libraryLabel = computed(() => LIBRARY_SHORT[library.value] ?? '款式库')
@@ -35,16 +47,28 @@ async function loadStyles(): Promise<void> {
   }
 }
 
+let initialized = false
+
 onMounted(async () => {
+  const [health, libs] = await Promise.all([
+    api.health().catch(() => null),
+    api.libraries().catch(() => null),
+  ])
+  // 后端有没有配 DEEPSEEK_API_KEY 决定大模型开关是否可用（没配会自动降级模板）
+  llmReady.value = health?.llm_configured ?? true
+  useLlm.value = llmReady.value
+  if (libs) {
+    libraryMeta.value = Object.fromEntries(libs.libraries.map((item) => [item.name, item]))
+    const preferred = pickDefaultLibrary(libs)
+    if (preferred) library.value = preferred
+  }
+  initialized = true
   await loadStyles()
-  // 后端未配置 Key 时会自动退回模板理由，因此默认允许勾选；
-  // 首次推荐成功后，可用 meta.explainer 进一步展示实际生成方式。
-  llmReady.value = true
 })
 
 watch(library, () => {
   result.value = null
-  void loadStyles()
+  if (initialized) void loadStyles()
 })
 
 function currentScene(): string {
@@ -133,6 +157,7 @@ const sceneLabel = computed(() => SCENE_LABELS[features.value.scene] ?? features
           v-model:library="library"
           :busy="loading"
           :llm-ready="llmReady"
+          :library-meta="libraryMeta"
           @submit="submit"
           @reset="resetForm"
           @preset="applyPreset"
@@ -157,6 +182,11 @@ const sceneLabel = computed(() => SCENE_LABELS[features.value.scene] ?? features
 
         <div v-if="stylesError" class="alert alert-error" style="margin-bottom: 14px">
           款式库加载失败：{{ stylesError }}。请确认后端已启动（默认 http://127.0.0.1:8000）。
+        </div>
+
+        <div v-else-if="demoMissing" class="alert alert-error" style="margin-bottom: 14px">
+          演示库图片缺失（<code>static/demo/</code> 未随仓库提交），已可回退样例库占位图。
+          需要真实截图时在项目根目录重跑 <code>python scripts/prepare_images.py</code>。
         </div>
 
         <ResultBoard :result="result" :busy="loading" :error="error" />

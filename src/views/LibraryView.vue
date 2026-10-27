@@ -1,17 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import type { LibraryName, Style } from '../types'
+import type { LibraryInfo, LibraryName, Style } from '../types'
 import { api, ApiError } from '../api'
-import { COLOR_FAMILY_LABELS, LIBRARIES, LIBRARY_HINTS, LIBRARY_SHORT, STYLE_LABELS } from '../options'
+import {
+  COLOR_FAMILY_LABELS,
+  LIBRARIES,
+  LIBRARY_HINTS,
+  LIBRARY_SHORT,
+  STYLE_LABELS,
+  pickDefaultLibrary,
+} from '../options'
 import StyleGallery from '../components/StyleGallery.vue'
 
 const library = ref<LibraryName>('sample')
+const libraryMeta = ref<Record<string, LibraryInfo>>({})
 const styles = ref<Style[]>([])
 const loading = ref(true)
 const error = ref('')
 
 const libraryLabel = computed(() => LIBRARY_SHORT[library.value] ?? '款式库')
-const libraryHint = computed(() => LIBRARY_HINTS[library.value] ?? '')
+const libraryHint = computed(() => {
+  const base = LIBRARY_HINTS[library.value] ?? ''
+  return libraryReady(library.value) ? base : `${base} · 图片缺失，请重跑 prepare_images.py`
+})
+
+function libraryReady(name: string): boolean {
+  const meta = libraryMeta.value[name]
+  if (!meta) return true
+  return meta.available && meta.images_ready
+}
 
 const colorCount = computed(() => new Set(styles.value.map((s) => s.color_family)).size)
 const styleCount = computed(() => new Set(styles.value.map((s) => s.style)).size)
@@ -30,7 +47,17 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  try {
+    const libs = await api.libraries()
+    libraryMeta.value = Object.fromEntries(libs.libraries.map((item) => [item.name, item]))
+    const preferred = pickDefaultLibrary(libs)
+    if (preferred) library.value = preferred
+  } catch {
+    /* 拿不到库清单就按默认样例库加载 */
+  }
+  await load()
+})
 
 watch(library, () => void load())
 
@@ -69,7 +96,8 @@ const styleList = computed(() =>
         class="chip"
         :class="{ active: library === item.value }"
         :aria-pressed="library === item.value"
-        :disabled="loading"
+        :disabled="loading || !libraryReady(item.value)"
+        :title="libraryReady(item.value) ? LIBRARY_HINTS[item.value] : '图片缺失，请在项目根目录重跑 prepare_images.py'"
         @click="library = item.value as LibraryName"
       >
         {{ item.label }}
