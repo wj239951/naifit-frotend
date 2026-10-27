@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Style } from '../types'
 import { assetUrl } from '../api'
-import { COLOR_FAMILY_LABELS, STYLE_LABELS } from '../options'
+import { COLOR_FAMILY_LABELS, LENGTH_FIT_LABELS, STYLE_LABELS } from '../options'
 
 const props = withDefaults(
   defineProps<{
@@ -15,6 +15,7 @@ const props = withDefaults(
 
 const activeColor = ref('')
 const activeStyle = ref('')
+const activeLength = ref('')
 const keyword = ref('')
 
 const colorOptions = computed(() => {
@@ -37,11 +38,25 @@ const styleOptions = computed(() => {
   }))
 })
 
+const lengthOptions = computed(() => {
+  const counts = new Map<string, number>()
+  for (const s of props.styles) {
+    const value = s.length_fit || 'mid'
+    counts.set(value, (counts.get(value) ?? 0) + 1)
+  }
+  return [...counts.entries()].map(([value, count]) => ({
+    value,
+    label: LENGTH_FIT_LABELS[value] ?? value,
+    count,
+  }))
+})
+
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   const list = props.styles.filter((s) => {
     if (activeColor.value && s.color_family !== activeColor.value) return false
     if (activeStyle.value && s.style !== activeStyle.value) return false
+    if (activeLength.value && (s.length_fit || 'mid') !== activeLength.value) return false
     if (kw) {
       const haystack = `${s.id} ${s.name} ${s.tags.join(' ')}`.toLowerCase()
       if (!haystack.includes(kw)) return false
@@ -59,9 +74,14 @@ function toggleStyle(value: string): void {
   activeStyle.value = activeStyle.value === value ? '' : value
 }
 
+function toggleLength(value: string): void {
+  activeLength.value = activeLength.value === value ? '' : value
+}
+
 function resetFilters(): void {
   activeColor.value = ''
   activeStyle.value = ''
+  activeLength.value = ''
   keyword.value = ''
 }
 </script>
@@ -115,8 +135,29 @@ function resetFilters(): void {
       >
         {{ opt.label }} <span class="count">{{ opt.count }}</span>
       </button>
+    </div>
+
+    <div v-if="filters" class="filter-row">
       <button
-        v-if="activeColor || activeStyle || keyword"
+        class="chip"
+        :class="{ active: !activeLength }"
+        type="button"
+        @click="activeLength = ''"
+      >
+        全部甲长
+      </button>
+      <button
+        v-for="opt in lengthOptions"
+        :key="opt.value"
+        class="chip"
+        :class="{ active: activeLength === opt.value }"
+        type="button"
+        @click="toggleLength(opt.value)"
+      >
+        {{ opt.label }} <span class="count">{{ opt.count }}</span>
+      </button>
+      <button
+        v-if="activeColor || activeStyle || activeLength || keyword"
         class="btn btn-ghost btn-sm"
         type="button"
         style="margin-left: auto"

@@ -70,6 +70,10 @@ function download(): void {
       </p>
     </div>
 
+    <p v-if="result" class="field-note" style="margin: -4px 0 14px">
+      甲长标签表示该款式的<strong>设计适配甲长</strong>（不是图片里模特的指甲长度）；甲长较长时可做短甲 / 中长甲 / 长甲所有款式。想只看「适合长甲」的款式，可到款式库用甲长筛选。
+    </p>
+
     <div v-if="error" class="alert alert-error">{{ error }}</div>
 
     <div v-else-if="busy && !tiers.length" class="result-grid">

@@ -162,9 +162,9 @@ export const STYLE_LABELS: Record<string, string> = {  solid: '纯色',
 }
 
 export const LENGTH_FIT_LABELS: Record<string, string> = {
-  short: '短甲友好',
-  mid: '中长甲',
-  long: '长甲',
+  short: '适合短甲',
+  mid: '适合中长甲',
+  long: '适合长甲',
 }
 
 export const QUALITY_LABELS: Record<string, string> = {
