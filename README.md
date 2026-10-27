@@ -70,6 +70,10 @@ VITE_API_BASE=https://api.example.com
 | --- | --- |
 | ![款式库](screenshots/library.png) | ![手照识别](screenshots/upload.png) |
 
+| 推荐卡网络参考图（M32，CC 授权） |
+| --- |
+| ![网络参考图](screenshots/refs.png) |
+
 ## 目录结构
 
 ```
