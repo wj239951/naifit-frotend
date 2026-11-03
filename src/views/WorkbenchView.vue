@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type {
   Features,
   LibraryInfo,
@@ -27,6 +27,9 @@ const styles = ref<Style[]>([])
 const stylesError = ref('')
 const llmReady = ref(false)
 const showUpload = ref(false)
+const uploadAnchor = ref<HTMLElement | null>(null)
+// 地址栏里带账号密码时（http://user:pass@host），浏览器禁止同源 fetch，接口会全部失败
+const credentialUrl = typeof window !== 'undefined' && /\/\/[^/]*@/.test(window.location.href)
 const libraryMeta = ref<Record<string, LibraryInfo>>({})
 const demoMissing = computed(() => {
   const demo = libraryMeta.value.demo
@@ -73,6 +76,12 @@ watch(library, () => {
 
 function currentScene(): string {
   return features.value.scene
+}
+
+async function openUpload(): Promise<void> {
+  showUpload.value = true
+  await nextTick()
+  uploadAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 function applyPreset(preset: Preset): void {
@@ -140,6 +149,10 @@ const sceneLabel = computed(() => SCENE_LABELS[features.value.scene] ?? features
         拍一张手照（可选），补一句自己的想法（可选），系统从款式库里挑出 3 个最合适的款式，并给出可解释的推荐理由。
         不生成图片、不做虚拟试戴，所有推荐结果都能追溯到款式库里的真实条目。
       </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" type="button" @click="openUpload">📷 上传手照 · 自动识别特征</button>
+        <span class="field-note">不拍照也行：直接手选 7 项特征即可。</span>
+      </div>
       <div class="hero-meta">
         <span>规则引擎选款 · 模型只写理由</span>
         <span>输出契约校验（style_id 必须存在）</span>
@@ -171,17 +184,23 @@ const sceneLabel = computed(() => SCENE_LABELS[features.value.scene] ?? features
           <p class="field-note" style="margin: 6px 0 12px">
             不上传照片也能用：直接手选 7 项特征即可。上传手照可减少输入，识别结果会先回填，再统一确认推荐。
           </p>
-          <button class="btn btn-ghost btn-sm" type="button" @click="showUpload = !showUpload">
+          <button class="btn btn-ghost btn-sm" type="button" @click="showUpload ? (showUpload = false) : openUpload()">
             {{ showUpload ? '收起上传面板' : '打开上传面板' }}
           </button>
         </div>
       </div>
 
       <div class="workbench-main">
-        <PhotoUpload v-if="showUpload" :scene="currentScene()" :disabled="loading" @apply="applyVision" />
+        <div ref="uploadAnchor">
+          <PhotoUpload v-if="showUpload" :scene="currentScene()" :disabled="loading" @apply="applyVision" />
+        </div>
 
         <div v-if="stylesError" class="alert alert-error" style="margin-bottom: 14px">
-          款式库加载失败：{{ stylesError }}。请确认后端已启动（默认 http://127.0.0.1:8000）。
+          <p>款式库加载失败：{{ stylesError }}。请确认后端已启动（默认 http://127.0.0.1:8000）。</p>
+          <p v-if="credentialUrl">
+            检测到地址栏里带着账号密码（http://账号:密码@…）：浏览器会拒绝这类同源接口请求。
+            请重新打开站点，用浏览器弹窗输入账号密码，不要把账号密码写进 URL。
+          </p>
         </div>
 
         <div v-else-if="demoMissing" class="alert alert-error" style="margin-bottom: 14px">
@@ -213,6 +232,14 @@ const sceneLabel = computed(() => SCENE_LABELS[features.value.scene] ?? features
 </template>
 
 <style scoped>
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
 .workbench {
   display: grid;
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
